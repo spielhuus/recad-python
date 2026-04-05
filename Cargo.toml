@@ -1,0 +1,24 @@
+[package]
+name = "recad_python"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "recad_python"
+crate-type = ["cdylib"]
+
+[features]
+default = ["svg"]
+svg = ["recad/svg"]
+wgpu = ["recad/wgpu", "dep:winit"]
+
+[dependencies]
+recad = { path = "../recad/crates/recad", default-features = false }
+log = "0.4"
+# spdlog-rs = { version = "0.5", features = ["log"] }
+spdlog-rs = { version = "0.5" }
+winit = { version = "0.30", default-features = false, features = ["rwh_06", "wayland"], optional = true }
+
+[dependencies.pyo3]
+version = "0.27"
+features = ["abi3-py38"]

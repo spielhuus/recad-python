@@ -1,0 +1,136 @@
+---
+title: "svf circuit"
+summary: "draw a filter circuit and do frequency analysis."
+---
+
+# Create circuit
+
+This will create the data and parameters to plot datas using D3.
+
+## Usage
+
+First create some datas for example in a python block.
+
+```{python}
+#| label: fig-sfv
+#| fig-cap: "State variable filter"
+#| fig-align: center
+
+
+from recad import Circuit, Schema, Symbol, LocalLabel, Wire, Junction, Simulation
+import numpy as np
+
+draw = Schema("StateVariableFilter", ["/usr/share/kicad/symbols"])
+draw = (
+  draw
+  + LocalLabel("INPUT").at((25.4, 50.80)).rotate(180)
+  + Symbol("R1","100k", "Device:R").rotate(90) #, Spice_Netlist_Enabled="Y")
+  + Symbol("C1","220n", "Device:C").rotate(90) #, Spice_Netlist_Enabled="Y")
+  + (u1_dot_in := Junction())
+  + Symbol("U1","4069", "4xxx:4069").unit(1) #, Spice_Primitive="X", Spice_Model="4069UB", Spice_Node_Sequence="1 2 14 7")
+  + (u1_dot_out := Junction())
+
+  + Symbol("R3","100k", "Device:R").rotate(90) #, Spice_Netlist_Enabled="Y")
+  + (u2_dot_in := Junction())
+  + Symbol("U2","4069", "4xxx:4069").unit(1) #, Spice_Primitive="X", Spice_Model="4069UB", Spice_Node_Sequence="1 2 14 7")
+  + (u2_dot_out := Junction())
+
+  + Symbol("R5","10k", "Device:R").rotate(90) #, Spice_Netlist_Enabled="Y")
+  + (u3_dot_in := Junction())
+  + Symbol("U3","4069", "4xxx:4069").unit(1) #, Spice_Primitive="X", Spice_Model="4069UB", Spice_Node_Sequence="1 2 14 7")
+  + (u3_dot_out := Junction())
+
+  + Symbol ("R6","10k", "Device:R").rotate(90) #, Spice_Netlist_Enabled="Y")
+  + (u4_dot_in := Junction())
+  + Symbol("U4","4069", "4xxx:4069").unit(1) #, Spice_Primitive="X", Spice_Model="4069UB", Spice_Node_Sequence="1 2 14 7")
+  + (u4_dot_out := Junction())
+
+  + Wire().up().length(2*2.54).at(u1_dot_out)
+  + Symbol("R2","100k", "Device:R").rotate(270).tox(u1_dot_in) #, Spice_Netlist_Enabled="Y"
+  + (r2_out := Junction())
+  + Wire().down().toy(u1_dot_in)
+
+  + Wire().up().length(2*2.54).at(u2_dot_out)
+  + LocalLabel("HP")
+  + Symbol("R4","100k", "Device:R").rotate(270).tox(u2_dot_in) #, Spice_Netlist_Enabled="Y"
+  + (r4_out := Junction())
+  + Wire().down().toy(u2_dot_in)
+
+  + Wire().up().length(2*2.54).at(u3_dot_out)
+  + LocalLabel("BP")
+  + (bp := Junction())
+  + Symbol("C3","10n", "Device:C").rotate(270).tox(u3_dot_in) #, Spice_Netlist_Enabled="Y"
+  + Wire().down().toy(u3_dot_in)
+
+  + Wire().up().length(2*2.54).at(u4_dot_out)
+  + LocalLabel("LP")
+  + (lp := Junction())
+  + Symbol("C4","10n", "Device:C").rotate(270).tox(u4_dot_in) #, Spice_Netlist_Enabled="Y"
+  + Wire().down().toy(u4_dot_in)
+
+  + Wire().up().length(2*2.54).at(lp)
+  + Symbol("R7","100k", "Device:R").rotate(270).tox(r4_out) #, Spice_Netlist_Enabled="Y"
+  + Wire().down().toy(r4_out)
+
+  + Wire().up().length(4*2.54).at(bp)
+  + Symbol("R8","100k", "Device:R").rotate(270).tox(r2_out) #, Spice_Netlist_Enabled="Y")
+  + Wire().down().toy(r2_out)
+
+  + Symbol("U1", "4069", "4xxx:4069").unit(7).at((50.8, 76.2)) #, Spice_Model="4069UB", Spice_Node_Sequence="1 2 14 7", on_schema="no"
+  + Symbol("GND", "GND", "power:GND").unit(1).at("U1", "7") #, on_schema="no"
+  + Symbol("+5V", "+5V", "power:+5V").unit(1).at("U1", "14") #, on_schema="no")
+
+  + Symbol("U2", "4069", "4xxx:4069").unit(7).at((71.12, 76.2)) #, Spice_Model="4069UB", Spice_Node_Sequence="1 2 14 7", on_schema="no")
+  + Symbol("GND", "GND", "power:GND").unit(1).at("U2", "7") #, on_schema="no"
+  + Symbol("+5V", "+5V", "power:+5V").unit(1).at("U2", "14") #, on_schema="no"
+
+  + Symbol("U3", "4069", "4xxx:4069").unit(7).at((91.44, 76.2)) #, Spice_Model="4069UB", Spice_Node_Sequence="1 2 14 7", on_schema="no")
+  + Symbol("GND", "GND", "power:GND").unit(1).at("U3", "7") #, on_schema="no")
+  + Symbol("+5V", "+5V", "power:+5V").unit(1).at("U3", "14") #p, on_schema="no"
+
+  + Symbol("U4", "4069", "4xxx:4069").unit(7).at((111.76, 76.2)) # Spice_Model="4069UB", Spice_Node_Sequence="1 2 14 7", on_schema="no")
+  + Symbol("GND", "GND", "power:GND").unit(1).at("U4", "7") # on_schema="no"
+  + Symbol("+5V", "+5V", "power:+5V").unit(1).at("U4", "14") # on_schema="no"
+)
+
+draw.write("svf.kicad_sch")
+
+#circuit = draw.circuit(["spice"])
+#circuit.voltage("1", "+5V", "GND", "DC 15V")
+#circuit.voltage("2", "INPUT", "GND", "AC 2V SIN(0 2V 1k)")
+#circuit.control('''
+#ac dec 10 100 10K
+#
+#*let r_act = 1k
+#*let r_step = 2k
+#*let r_stop = 200k
+#*while r_act le r_stop
+#*  alter R7 r_act
+#*  alter R8 r_act
+#*  ac dec 10 100 10K
+#*  let r_act = r_act + r_step
+#*end
+#*tran 1us 10ms
+#''')
+#
+#print("get simulation")
+#simulation = Simulation(circuit)
+#svf_data = simulation.tran("1us", "10ms", "0ms")
+#print(len(svf_data))
+#svf = simulation.run()
+#
+#for key, value in svf.items():
+#  if key.startswith("ac"):
+#    for k, v in value.items():
+#      if k == "frequency":
+#        svf[key][k] = v[1:]
+#      else:
+#        svf[key][k] = 20*np.log10(np.absolute(v))[1:]
+
+draw.open()
+draw.plot(scale=6)
+```
+
+This is the first setup with the 4069 as a voltage follower. C1 and C2 are DC blocking capacitors. When we choose R1 and R2 as 100kOhm we would expect a gain of one.
+
+```{d3 element="svf_ac", x="frequency", y="bp,hp,lp" data="svf.ac1", width="600", height="400", fig.align="center", xType="scaleLog", fig.cap="Figure 7: State variable filter simulation"}```
