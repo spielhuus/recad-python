@@ -4,3 +4,4 @@ recad/recad_python.*.so
 samples/quarto/_freeze
 samples/quarto/_site
 samples/quarto/.quarto
+recad.log

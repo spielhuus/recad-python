@@ -13,7 +13,7 @@ svg = ["recad/svg"]
 wgpu = ["recad/wgpu", "dep:winit"]
 
 [dependencies]
-recad = { path = "../recad/crates/recad", default-features = false }
+recad = { git = "https://github.com/spielhuus/recad.git", default-features = false }
 log = "0.4"
 # spdlog-rs = { version = "0.5", features = ["log"] }
 spdlog-rs = { version = "0.5" }
