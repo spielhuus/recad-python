@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    name: Build & Test (Ubuntu)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            libcairo2-dev \
+            libpango1.0-dev \
+            libngspice0-dev \
+            libpoppler-glib-dev \
+            libssl-dev \
+            libclang-dev
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check code formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run Cargo Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run Cargo tests
+        run: cargo test --all-features
+
+      - name: Install Python build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install maturin pytest
+
+      - name: Build and install Python package (Develop mode)
+        run: maturin develop --release --features svg
+
+      - name: Verify Python Import
+        run: |
+          python -c "import recad; print('recad successfully imported!')"
+
+  build-wheels:
+    name: Build Python Wheels
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config libcairo2-dev libpango1.0-dev libngspice0-dev \
+            libpoppler-glib-dev libssl-dev libclang-dev
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Build wheels via Maturin
+        uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          args: --release --out dist -f
+          manylinux: off
+
+      - name: Upload built wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-wheels
+          path: dist/*.whl
