@@ -26,6 +26,12 @@ jobs:
           python-version: '3.10'
           cache: 'pip'
 
+      - name: Create Virtual Environment
+        run: |
+          python -m venv .venv
+          echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -83,8 +89,8 @@ jobs:
           args: --release --out dist -f
           manylinux: off
 
-      - name: Upload built wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-wheels
-          path: dist/*.whl
+      # - name: Upload built wheels
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: python-wheels
+      #     path: dist/*.whl
