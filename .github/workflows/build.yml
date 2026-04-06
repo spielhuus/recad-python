@@ -18,23 +18,27 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config \
+            libwayland-dev wayland-protocols libxkbcommon-dev \
+            libcairo2-dev libpango1.0-dev libngspice0-dev \
+            libpoppler-glib-dev libssl-dev libclang-dev \
+            kicad-symbols
 
-          sudo apt-get install -y build-essential \
-            libwayland-dev wayland-protocols \
-            pkg-config libngspice0-dev \
-          kicad-symbols libwayland-client0 libwayland-dev \
-            libxkbcommon-dev
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
           cache: 'pip'
 
-      - name: Create Virtual Environment
+      - name: Create Virtual Environment & Fix PKG_CONFIG_PATH
         run: |
           python -m venv .venv
           echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
           echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          
+          # FIX: Restore the system pkg-config paths that setup-python hid
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:${PKG_CONFIG_PATH:-}" >> $GITHUB_ENV
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -65,6 +69,7 @@ jobs:
         run: |
           python -c "import recad; print('recad successfully imported!')"
 
+
   build-wheels:
     name: Build Python Wheels
     needs: build-and-test
@@ -78,13 +83,19 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            pkg-config libcairo2-dev libpango1.0-dev libngspice0-dev \
+            build-essential pkg-config \
+            libwayland-dev wayland-protocols libxkbcommon-dev \
+            libcairo2-dev libpango1.0-dev libngspice0-dev \
             libpoppler-glib-dev libssl-dev libclang-dev
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+
+      - name: Fix PKG_CONFIG_PATH
+        run: |
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig:${PKG_CONFIG_PATH:-}" >> $GITHUB_ENV
 
       - name: Build wheels via Maturin
         uses: PyO3/maturin-action@v1
