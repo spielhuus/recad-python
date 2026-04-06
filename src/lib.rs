@@ -477,21 +477,6 @@ fn recad_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     );
 
     logger.set_flush_level_filter(LevelFilter::All);
-    spdlog::set_default_logger(logger.clone());
-    match spdlog::init_log_crate_proxy() {
-        Ok(_) => {
-            spdlog::info!("Proxy initialized successfully.");
-        }
-        Err(e) => {
-            // Log this to the file directly using spdlog, so we see the error!
-            spdlog::error!(
-                "FAILED to init log proxy: {}. `log::info!` will NOT work.",
-                e
-            );
-        }
-    }
-
-    log::set_max_level(log::LevelFilter::Debug);
 
     m.add_function(wrap_pyfunction!(main, m)?)?;
     m.add_function(wrap_pyfunction!(bom, m)?)?;

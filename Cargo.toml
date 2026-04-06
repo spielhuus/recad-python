@@ -14,8 +14,6 @@ wgpu = ["recad/wgpu", "dep:winit"]
 
 [dependencies]
 recad = { git = "https://github.com/spielhuus/recad.git", default-features = false }
-log = "0.4"
-# spdlog-rs = { version = "0.5", features = ["log"] }
 spdlog-rs = { version = "0.5" }
 winit = { version = "0.30", default-features = false, features = ["rwh_06", "wayland"], optional = true }
 
